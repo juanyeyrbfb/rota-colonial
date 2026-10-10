@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rota da Arquitetura Colonial — São Luís</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@600;800&display=swap');
+:root{--gold:#d4a017;--gold-light:#f5d76e;--cream:#fef9e7;--panel:#fdf6e3;--path:#f7e7a0;--path-b:#d4a017;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:linear-gradient(135deg,#1a1a2e,#16213e 50%,#0f3460);min-height:100vh;font-family:'Nunito',sans-serif;color:#333;display:flex;flex-direction:column;align-items:center;padding:12px;overflow-x:auto}
+h1{font-family:'Press Start 2P',cursive;color:var(--gold-light);font-size:1.05rem;text-shadow:3px 3px 0 #000;margin-bottom:6px;text-align:center}
+.sub{color:#a0d2db;font-size:.82rem;text-align:center;margin-bottom:8px;max-width:650px}
+.hud{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.hud-box{background:rgba(0,0,0,.65);border:3px solid var(--gold);border-radius:10px;padding:6px 14px;color:#fff;font-weight:800;font-size:.85rem}
+.wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-start;max-width:1200px;margin:0 auto}
+.board-box{background:var(--cream);border:6px solid var(--gold);border-radius:12px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.board{display:grid;gap:0;background:#e8e0c8;border:3px solid #c9a227;position:relative}
+.cell{border:1px solid #d4c9a0;position:relative;background:#f0e9d2}
+.cell.path{background:var(--path);border:2px solid var(--path-b);z-index:1}
+.cell.start{background:#ffeaa7}
+.cell.end{background:#fdcb6e}
+.cell.obstacle{background:#d5cfc0}
+.cell-label{position:absolute;font-size:7px;font-weight:800;color:#5d4e00;top:1px;left:2px;z-index:2;pointer-events:none}
+.player{position:absolute;width:36px;height:42px;image-rendering:pixelated;z-index:15;transition:left .28s ease,top .28s ease;filter:drop-shadow(2px 2px 2px rgba(0,0,0,.45));pointer-events:none}
+.el-icon,.obs-icon{position:absolute;width:30px;height:30px;object-fit:contain;image-rendering:pixelated;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none}
+.side{width:270px;display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--panel);border:4px solid var(--gold);border-radius:10px;padding:10px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.panel h2{font-family:'Press Start 2P',cursive;font-size:.52rem;color:#5d4e00;margin-bottom:8px;text-align:center;background:var(--gold-light);padding:5px;border-radius:6px}
+.slots{display:flex;flex-direction:column;gap:5px;min-height:140px}
+.slot{height:36px;border:3px dashed #b8a050;border-radius:8px;background:#fffef5;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.72rem;font-weight:800;color:#8a7320}
+.slot.filled{border-style:solid;background:#fff}
+.slot img{width:26px;height:26px;image-rendering:pixelated}
+.arrows{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.abtn{background:#27ae60;border:3px solid #1e8449;border-radius:8px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;font-size:.58rem;color:#fff;font-weight:800}
+.abtn:hover{background:#2ecc71;transform:scale(1.03)}
+.abtn img{width:24px;height:24px;image-rendering:pixelated;margin-bottom:2px}
+.btns{display:flex;gap:6px;margin-top:8px}
+.act{flex:1;font-weight:800;font-size:.8rem;padding:8px;border:none;border-radius:8px;cursor:pointer;text-transform:uppercase}
+.bex{background:linear-gradient(180deg,#f1c40f,#d4a017);color:#3d2c00;border:3px solid #b8860b}
+.bex:disabled{opacity:.5;cursor:not-allowed}
+.bli{background:#ecf0f1;color:#2c3e50;border:3px solid #bdc3c7}
+.els{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ec{background:#fff;border:2px solid #b8a050;border-radius:8px;padding:6px;text-align:center;font-size:.58rem;font-weight:700;color:#5d4e00;opacity:.4;transition:.3s}
+.ec.got{opacity:1;border-color:#2ecc71;background:#e8f8f0;box-shadow:0 0 6px rgba(46,204,113,.5)}
+.ec img{width:28px;height:28px;object-fit:contain;image-rendering:pixelated;display:block;margin:0 auto 2px}
+.status{background:#2c3e50;color:#ecf0f1;padding:10px 14px;border-radius:8px;font-size:.85rem;text-align:center;margin-top:10px;width:100%;max-width:600px}
+.status.win{background:linear-gradient(90deg,#27ae60,#2ecc71);font-weight:800}
+.speech{position:absolute;background:#fffef5;border:3px solid #d4a017;border-radius:12px;padding:6px 10px;font-size:.7rem;font-weight:700;color:#3d2c00;z-index:30;max-width:180px;box-shadow:0 3px 10px rgba(0,0,0,.3);pointer-events:none;animation:pop .25s ease}
+.speech::after{content:'';position:absolute;bottom:-9px;left:16px;border:7px solid transparent;border-top-color:#d4a017}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:100;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.mc{background:var(--cream);border:6px solid var(--gold);border-radius:16px;padding:22px;text-align:center;max-width:420px;width:92%}
+.mc h2{font-family:'Press Start 2P',cursive;font-size:.85rem;margin-bottom:10px;color:#27ae60}
+.mc p{margin-bottom:10px;font-size:.88rem;line-height:1.4}
+.mc button{background:var(--gold);color:#3d2c00;border:none;padding:10px 22px;font-size:.9rem;font-weight:800;border-radius:8px;cursor:pointer;margin:4px}
+.phase-title{font-family:'Press Start 2P',cursive;font-size:.7rem;color:var(--gold-light);text-align:center;margin-bottom:6px}
+.hint{font-size:.7rem;color:#a0d2db;text-align:center;margin-top:4px;max-width:500px}
+#ending{display:none;position:fixed;inset:0;background:#000;z-index:200;overflow:hidden;align-items:center;justify-content:center;flex-direction:column}
+#ending.show{display:flex}
+#ending-stage{position:relative;width:100%;height:60%;display:flex;align-items:center;justify-content:center}
+#ending-player{width:64px;height:76px;image-rendering:pixelated;z-index:2}
+#ending-hole{position:absolute;width:0;height:0;border-radius:50%;background:radial-gradient(circle,#1a0a00 30%,#000 70%);box-shadow:0 0 40px 10px rgba(80,40,0,.6);transition:width 1.2s ease,height 1.2s ease;z-index:1}
+#ending-text{color:#f5d76e;font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:800;text-align:center;max-width:520px;padding:20px;line-height:1.55;opacity:0;transition:opacity 1.5s ease;text-shadow:0 0 12px rgba(212,160,23,.5)}
+#ending-text.show{opacity:1}
+#ending-btn{margin-top:24px;background:#d4a017;color:#3d2c00;border:none;padding:12px 28px;font-size:1rem;font-weight:800;border-radius:10px;cursor:pointer;opacity:0;transition:opacity 1s ease}
+#ending-btn.show{opacity:1}
+@keyframes spin-char{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.3)}100%{transform:rotate(360deg) scale(1)}}
+@keyframes fall{0%{transform:translateY(0) scale(1) rotate(360deg);opacity:1}100%{transform:translateY(400px) scale(.2) rotate(720deg);opacity:0}}
+.spinning{animation:spin-char 3.5s ease-in-out forwards}
+.falling{animation:fall 2s ease-in forwards}
+</style>
+</head>
+<body>
+<h1>🗺️ ROTA DA ARQUITETURA COLONIAL</h1>
+<p class="sub">Centro Histórico de São Luís — Guia monta • Visitante executa<br>
+<span style="font-size:.75rem">🚧 Obstáculos bloqueiam — use o <b>desvio</b> (caminho amarelo alternativo)</span></p>
+<div class="phase-title" id="phaseTitle">FASE 1</div>
+<div class="hud">
+  <div class="hud-box">📦 <span id="hudEl">0</span>/<span id="hudElMax">3</span></div>
+  <div class="hud-box">📍 Fase <span id="hudPhase">1</span>/5</div>
+  <div class="hud-box">👣 <span id="hudSteps">0</span></div>
+</div>
+<div class="wrap">
+  <div class="board-box"><div class="board" id="board"></div></div>
+  <div class="side">
+    <div class="panel">
+      <h2>CARTAS DE COMANDO</h2>
+      <p style="font-size:.62rem;text-align:center;color:#7f6a1a;margin-bottom:4px">Máximo de cartas por fase — planeje bem</p>
+      <div class="slots" id="slots">
+        <div class="slot" data-i="0">1</div><div class="slot" data-i="1">2</div>
+        <div class="slot" data-i="2">3</div><div class="slot" data-i="3">4</div>
+      </div>
+      <div class="arrows">
+        <button class="abtn" data-d="up"><img id="imgUp">Avançar</button>
+        <button class="abtn" data-d="down"><img id="imgDown">Voltar</button>
+        <button class="abtn" data-d="left"><img id="imgLeft">Esquerda</button>
+        <button class="abtn" data-d="right"><img id="imgRight">Direita</button>
+      </div>
+      <div class="btns">
+        <button class="act bex" id="btnGo">▶ Executar</button>
+        <button class="act bli" id="btnClr">✖ Limpar</button>
+      </div>
+    </div>
+    <div class="panel"><h2>ELEMENTOS</h2><div class="els" id="elsPanel"></div></div>
+    <div class="panel"><h2>OBSTÁCULOS</h2>
+      <div style="font-size:.68rem;color:#5d4e00;line-height:1.45">🚧 Obra — bloqueia<br>🚫 Rua interditada — desvie</div>
+    </div>
+  </div>
+</div>
+<div class="status" id="status">Monte as cartas e execute!</div>
+<p class="hint">Casas amarelas = caminho. Obstáculo = rodeie pelo desvio.</p>
+
+<div class="modal" id="modalPhase"><div class="mc">
+  <h2 id="phaseModalTitle">Fase Completa!</h2>
+  <p id="phaseModalText"></p>
+  <button onclick="nextPhase()">Próxima Fase ▶</button>
+</div></div>
+
+<div id="ending">
+  <div id="ending-stage">
+    <div id="ending-hole"></div>
+    <img id="ending-player" alt="">
+  </div>
+  <div id="ending-text"></div>
+  <button id="ending-btn" onclick="location.reload()">Jogar Novamente</button>
+</div>
+
+<script>
+const ASSET = {
+  player: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAwCAYAAABjezibAAABOklEQVR4nO2YsRGDMAxF5VwWoKDJBOkyEB2rpM4KdOyUCWgoGMFpYp/P2FhCJsiEV8Fh8L8v2ZJRkEYjxnBQSw8vG0/O5kp9oWtq9qRtP6LHindwMf5fNEAe51wcF8vOwdUC235E5RIl30KQF4kBG3Juahw3xL9idYgNfo7lXu3Hd3CoKrhNk73P7ah4B3epJJ7LZVcSV32Wvi/kNLKaBJ1U4AnLvU1giTUP4kMsXqDdB/cKbQANTpijDqbaKWy7Zcam3u+aOmhSOSGmQkkJTvqId1C8QHY3sxG2eIh3MCmQsp2Y8Rz8BVWOg1SnYvzdmWTWbglBzS4W0AAA1XvIqmC631AaxIf4FMgFXepez0f0WeIYqYMHKeS8x3GQiN26Dv/r4xTIRbzAzTtqbock3kHxAtHdTIbvrOIDve1VuLIqIHEAAAAASUVORK5CYII=",
+  cima: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAoElEQVR4nO3YsQmAMBQAUXUBweUsxOlsdDlX0MpgIRj0hyNwbwDNJZ8IttPaH03FOnoBfxlAKxawjHuzjHupxyeewJP7zpc+hTbyGn1b7LwNUa9KHKFLzqiUGKffI/R1UVHj5AjRwm6h3FGKvomqP4GwgJyd9TvwwACaATQDaAbQDKAZQDOAZgDNAFr1AaE/dwnVn4ABNANoBtAMoBlAOwFEUyFRx7/KlAAAAABJRU5ErkJggg==",
+  baixo: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAACA0lEQVR4nO2ZzWsTQRiHn3c22aw1moL1JL0UxKOHCoIHFaEHFSyCePADC/o3COJNBMGjntVDFQtFzUlRUayWgB7US8GD4EexUPwgxYS2iZv1kBq34KaRfcMQmOc6w/zm2XkHZmbl+EQhoocxtieQFidgGydgGydgGydgm54XyGgPKAjVejk50Pj43jq1PHWBSr3MvRPJx6tXs0WulMbU8rqwAk0iGv9sr4WLqnk9vwecgG2cgG2cgG2cgG2cgG2cgG2cgG2cgG2cQJywUefncvs+vxo1KrUFRKR9xw5RFdgxeIjHp6PE+zDA3qFTFE9GlBfLKpkql/p6uMTZPXfYEAy0nTz8uewL5/fd5e3cI6Y/3k6VrSIQRiHDWw6uOfm/ROwcHOVb9XPqbOVN3HldC/Jf/ZNQWQHfC7j49ABDm4Y5tv0CEe3/GwqGcw93s1RfSJ2tImDE493XErlsnuZXTRaQlUWfmX/BxlwhfXbqEWK8+fKA/TcEwayUyGoEw/MPNzlyK0Mh16+Sqfq0aMSjP+jjammMbZt3MbL1TKtNEC5PHaVa+06Qya9ZZp2i/jbqmSwvZ4sE2TyCIaLRKpvpT5MqZROna0eJJ++vM3KtWU6v5+5zeFzUyiaO+gq0BjY+A32GS89GqSz/YL1fUCubVTnqI8bwTIaZ+aluRrjTqHV6XuA34mh4JwbsWhsAAAAASUVORK5CYII=",
+  esquerda: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAB9ElEQVR4nO2YsWsUQRSHv7d3t3dJzuxZaCFoYZPCRrQ6BesEIUFRQU4jIb2W+gcIotgE/wBJIiZNiqsiIQhptFRSCHYWFhrQcOaSu2SzM1aKsutmvFwyezBft+ws/D72zXuzK7X5QNPDeLYD7BcnYBsnYBsnYBsnYBsnYBsnYBsnYJueF8ibLtxVu7TCTQAEj4FiGUEOLJgpxm/g/IkR6uOa+rhmavQ9WqmDzGXMngJh1ObW2UdcOl1Do9AoKqXj3D73mEiFh5ExFUn7Jo5UxNpmk+VJBfL3MsFj+Lng57oXRmk4WqqgMf9MT90DQ8eqzN1cQhMvF43i1UT3/weMzgiDxcB4faJAGG1z7+I0/YVKYvhfpN3rBOmgKcYElI5Yb7WpnroeK5ssElM+GZxhaVL3RHhIEGi015h99wC0/R5vQkygufOd+oenQGc1edgkJizly1yZ9bi/eCET0zaNf7bRcjGg0f7K1Js73K1OJ86BZ28nyHt+98J4Pn350n89kzrIALbCHyzUIkT4Y8BohBw3Xhbxc32d5u0KexZ5f2GQqy88Hr6+jOAhCJ/WVxmbEQqWw4PhaXTAD/jc+MiTlWsg0Ao3KPtHMrE7jI/TzZ1vrH5Z/n0tko0OlY0U+8AJ2MYJ2MYJ2MYJ2MYJ2MYJ2MYJ2OYn3ad/q7AE7NAAAAAASUVORK5CYII=",
+  direita: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAACB0lEQVR4nO2Xz2sTQRSAv9ntdmOaZCVavQkiKPSinoqIFxEURRQ8aanoyT9A8R/oRfQ/EMQfUBAvloIKSkE8KGgvCj2I7U2xhRZsWrWbdPd5SA3VpGl2Fd4G5jstOzPwvnlv38yaoYeB0MU42gH8K1ZAGyugjRXQxgpoYwW0sQLaWAFterQDABCJGdh5hC1eCQSmF95RCec7WqsuIEAlXOL8/hF2lw8AhpGJU3ypzFD0g03XG+0/smr0k0cXQoQIMPWgMIjAuVGXvFdquz5RBmpRyPG9V1iNq6kD/pvVuLb2ZBrvBAEMR/dcYmruFUttyilRBirhIuMXBSFOG28iDIbrTw/zcf4Nxd5gvWODTHchQbh58jVjwzEr0XLLOZkWABrZPjNwjUJvuWk88wIAGGH44A2C3I6mIfU22hFiOHHXUM4XcIz7x1DmBT58neBHbZEg5zcFDykFzH+uvI26msHh8dQtphfe4rm5lnMSCQT+Vk7fNzgt2llaqhE8u9yiNYvh2B1Df18B12ne+d8kEhCEILf58Z6EKK7x/NNtBnedpeRvB2Dy8xO+rcyyLe+3DR4y8A24jse9yavs6z9E4Ne7zMuZB7yffbFh2axH/S4E9cx+D5eJ18oo7/XR43S2t+oZgPqVoeAXU63tjoOsDVZAGyugjRXQxgpoYwW0sQLaWAFtul7gF+YShHKevL0YAAAAAElFTkSuQmCC",
+  azulejo: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAwUlEQVR4nGP8////fwYokGq9xMDAwMDwrFoPhY8sxsDAwMCav4eBgYGB4fdEFwZ0vdj0I+tlYqAzoLuFjJItF+FBii8okAHHpG8MDAwMDD/yuLDK44uaERCk+FIpMoAFIy6ALXhHUylGUCIHI3KQYUuluNQyMIy4VMqStxsepMzKVkRp+nv3GFnqGRhGQpDS3UIWUTExOOcZWnLGnS2ssIjhyxYIO4Z/kI4W3lQHo00MqgMW5GAjtiGMKIxHG8KYAACrsXuoQz8nngAAAABJRU5ErkJggg==",
+  janela: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAcCAYAAAAAwr0iAAAC7UlEQVR4nO2WTWsTURSGn0li4ySpN0ipVqpdFDLB0OqiNLoQxY0bUTEtiu79CxFaPyL4D0T8AHe60C7cSJcuXKk7PzCThUrRokVqbtrkpq3mumhmJtrMRMHgxgPDXM5zTu475557iKG11vxDiwAcSyfoM6pd3+zOm43fGgGwDhzHGhqkJxrtysarKyu+LAKQyh5hZM/ermzuWDze6y9g52A/42MjXRXgZxFnsbXwgrJVI2nHKKdroFlfN32Nzd+pDK14vmIMDLwcqwYhSL7xcqq76qyZDZJ2jMVLo8ECVjN1BkpxZEahJ/e7ATuuvkBmFOF6iIG3G3n8wVMvN6X4enmPy54sVDh1+z0yo3wrEHIWomQiU4rqZBaAXL4CwPzUKKJkEvu8qS2vTmbb5ubyFQ70b0GmFKJkdhbQGuj8uPOWKUVt21og/5UBXLxRdcX5mXsEwjaR6faBwjZpbG4gLX/ulysthSj6V8AVINP+gTKtCKtQIPdjougv7icBwjaRlmLm7l2ODteprCZZVH3AwfUKRDtUwFIUCgVGYy3gM5zTmlv2yc4CnHOcmDrL5PkyvT1ltppfmLl3D5kaJlwPIUomjx4+ZN9AmJWGSf1blNcvk4GNFolE/qwHrl2/xeEhww34VNaIRa8H3s0vkIgaJJr88RONWNyHTCv6F7aD4fY1Gs39kEDY/j2A1lrPzs7qRqPR9aeduRVIzDxzr4ywTTC8Y5Gp9UGUmIt6PkuB9uaHKJmgm13f9MU/9BCphZEpxfLE+O8dgSiazE97YzM+8xRR9JrQj8u0AgOquazLns9VOfTsVeA19AaRtf7lH6dGAE0uX0FrzXJuHGkpatvXXK61bg4cjwvbpJrLuiyXrzC2M+bekI4CWidWLr8EwMT5JZc5o7jV78S15joM4NLNWsdRvOEatjOnB4K4H/v9URwQKErNHgjgfux/BTpVwNBa6+kLV9idaf+P5W/amdMn2gvo+s4BFuoc8l9Ad+0Hd1co/Rsd87gAAAAASUVORK5CYII=",
+  porta: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAgCAYAAAABtRhCAAABF0lEQVR4nGNkIAH8////PzZxRkZGRmLNYCLFQmoAuluINyhwBSFBQ/EEMVYJdItYjEPg7D9n1zAQK4fN4sERpMg+ZDEOYWBUd0HI3dyDagCaHLIvsfmQBZtF6MGEzMdwHJID0NXCzEO2mAVdEt3VLMYhGHGDC6CHBrLZMEsZcfkMHfw5u4aBNWoGVrnfyzII6mVggPiUEWbZqwcPiPIFuUBMQYGBgQEpSKX772Ao+j3RhYE1HzWRPC1UQeGj68OmByKOZiHDa0wLGRhcsIijWogpj00PVBzFQlEVLIrwiOOTx6Nn+PuQ/kUbqTUCevaBJXeSLcSelKmZLdDjcDTRUAkM/yAdzRZUj8MBTKWj1RMuQOtsQSkAAJ9/xIjwHxTJAAAAAElFTkSuQmCC",
+  sacada: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAcCAYAAAAAwr0iAAAC7UlEQVR4nO2WTWsTURSGn0li4ySpN0ipVqpdFDLB0OqiNLoQxY0bUTEtiu79CxFaPyL4D0T8AHe60C7cSJcuXKk7PzCThUrRokVqbtrkpq3mumhmJtrMRMHgxgPDXM5zTu475557iKG11vxDiwAcSyfoM6pd3+zOm43fGgGwDhzHGhqkJxrtysarKyu+LAKQyh5hZM/ermzuWDze6y9g52A/42MjXRXgZxFnsbXwgrJVI2nHKKdroFlfN32Nzd+pDK14vmIMDLwcqwYhSL7xcqq76qyZDZJ2jMVLo8ECVjN1BkpxZEahJ/e7ATuuvkBmFOF6iIG3G3n8wVMvN6X4enmPy54sVDh1+z0yo3wrEHIWomQiU4rqZBaAXL4CwPzUKKJkEvu8qS2vTmbb5ubyFQ70b0GmFKJkdhbQGuj8uPOWKUVt21og/5UBXLxRdcX5mXsEwjaR6faBwjZpbG4gLX/ulysthSj6V8AVINP+gTKtCKtQIPdjougv7icBwjaRlmLm7l2ODteprCZZVH3AwfUKRDtUwFIUCgVGYy3gM5zTmlv2yc4CnHOcmDrL5PkyvT1ltppfmLl3D5kaJlwPIUomjx4+ZN9AmJWGSf1blNcvk4GNFolE/qwHrl2/xeEhww34VNaIRa8H3s0vkIgaJJr88RONWNyHTCv6F7aD4fY1Gs39kEDY/j2A1lrPzs7qRqPR9aeduRVIzDxzr4ywTTC8Y5Gp9UGUmIt6PkuB9uaHKJmgm13f9MU/9BCphZEpxfLE+O8dgSiazE97YzM+8xRR9JrQj8u0AgOquazLns9VOfTsVeA19AaRtf7lH6dGAE0uX0FrzXJuHGkpatvXXK61bg4cjwvbpJrLuiyXrzC2M+bekI4CWidWLr8EwMT5JZc5o7jV78S15joM4NLNWsdRvOEatjOnB4K4H/v9URwQKErNHgjgfux/BTpVwNBa6+kLV9idaf+P5W/amdMn2gvo+s4BFuoc8l9Ad+0Hd1co/Rsd87gAAAAASUVORK5CYII=",
+  obra1: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAFDUlEQVR4AeybQW7bQAxF5SIJ0k1PkF276P1P00ULZJE71GgDuCUCA7RkZfJNDoeUfoBpZGlIfn4+eAQU+TTxZ9cOEIBdj3+aCAAB2LkDO2+f3wAEYOcO7Lx9fgMQgJ07sNP2z22bvwFOj48nZJ0L8/ebA4h3svctyu9fMwB+UphphAMEYITriWoSgETDGCEFBkDOIb2OT08TsnSsXI9oemRN6VkvxDvZq2Pl2toLDIC1IONzOUAAcs0jXA0BCLd8bMF59SYAcs7oJeeQXvOErc86Vq51brluxVd7Lj3pJT3rhfajY+Va55ZrNF8TADQh99dygADUmpe7WgLgbmmthASg1rzc1RIAd0trJSQAteblrpYAuFuaM+GaKgKw5sxO7hOAnQx6rU0CsObMTu4TgJ0Meq1NArDmzE7uE4CdDHqtTQKw5sxO7hOAjQ+61V4TgMPxeNDr8eVl0uvL8/OELB0r1zq3XLcEV3suPeklPeuFeCd7daxc69xyjfrTBABNyP21HCAAteblrpYAuFtaKyEMgJwzeqHt6li5RuOr75ee9UL70bFyjcbP98MAzBPwc20HCEDt+ZnVEwCzhTkTfFTVAoAT+PPnx92ErNPPxxO0QD3N7b3rg/kR72Qv5N1/LS0QFgC0Avh8Ww4QgG3NE+6GAMCWbSvADsDX39Ok17b8maZfny9Xqz/txbXrVnzwczsAwYJZztcBAuDrZ7lsBKDcyN4XjD5dAoCeeWhFdL+3nvm5HK3HWh/V29i/BKARwMfbcoAAbGuecDcEALZsWwH+APQ+4/hO4EqgPwCu8pistwMEoLfDyfMTgOQD+qi8W/e1AfA+c29VuhbnrW/+DjP/vKbjfN+qB613rnvj7zYANyZmWA0HCECNOXVTSQC6WVsjcX8Ags80+P/ve8/J+k7QWV9/ADo3wPQ2BwiAzb/y0QSg+Ait8nEAkp9pC0O89Ua/03SuhwOwcJg3KjtAACpPz0E7AXAwsXKKeAA6n2nNYYx+J/Cu32z4/Q3xALyvh0+DHSAAwYZnK0cAsk3kg3q8ttkBsJ5pfCew/e2hkQQ7AEYBDB/rAAEY6//w6gRg+AjGCvAHgO8ElxMd/Y5zqWbxyR+ARQneyOwAAcg8nQBtBCDAZM8S3rn6A8B3AmxmqF/Gd4z+AGDtc3ewAwQg2PBs5QhAtokE64kHAD3j5oYYz7x5OvhztH5rvUaD8QA0BPFxrAMEINbvdNUIQLqRXBfU6+54AKxnXPV3AnSyLb9AP8YDgBrA/a4OEABXO+slIwD1ZuaqOB8ArTOu1T54BrbSwc9R/YP15gMAdpwBFgcIgMW9DcQSgORD7C0vPwDomdrbMTR/b/3G/PkBQA3nfsgBAgDZtb3NBGB7M4U6WgBw+HY8IOvh++uELCT31b0H8Afs52pNzxwz+Q/399PFavjZ1DfL36JhAUArgM+35QAB2NY84W4IAGxZTEBUFQIQ5XTSOgQg6WCiZBGAKKeT1iEASQcTJQsG4P7u7qQXKlTHyjUaX32/9KwX2o+OlWs0fr4fBmCegJ9rO0AAas/PrJ4AmC30TRCdDQbg7+vrwXNFNzy6nqd3ksvaDwyAtSDjczlAAHLNI1wNAQi3PFdBApBrHuFqCEC45bkKEoBc8whXQwDCLb9ecNRdAjDK+SR1CUCSQYySQQBGOZ+kLgFIMohRMgjAKOeT1CUASQYxSgYBGOV8kroEYPAgRpf/BwAA///fCrGOAAAABklEQVQDAMbCeT3R+hY0AAAAAElFTkSuQmCC",
+  obra2: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAFLUlEQVR4AeydTW4UQQyFe1AShQ0nyA4W3P80LEDKIncggkgDVjSSpzo9Ho9dLrvrRTKp7i7/PX9KtQZQPi34mloBADD1+JcFAACAyRWYvH38BAAAkyswefv4CQAAJldg0vZPbZt/AhwfH48aOyXG93cFNNrR3ncvvz/NAPiVgkgjFAAAI1RPlBMAJBrGiFLUANA5xO316WnRGPel9YimR+aknrlptKO93JfW1l7UAFgTwj+XAgAg1zzCqwEA4ZKPTdhmFwGgc4YbnUPc2oDSNfelNY9Na8m/2nPqiRv1zE3bD/elNY9Na208EQBtQOyvpQAAqDUv92oBgLuktQICgFrzcq8WALhLWisgAKg1L/dqAYC7pDkDblUFALaUmeQ+AJhk0FttAoAtZSa5DwAmGfRWmwBgS5lJ7gOASQa91SYA2FJmkvsAYOeDltoTATi8vh64Pb68LNy+PD8vGuO+tOaxaS0VXO059cSNeuam0Y72cl9a89i01uojAqANiP21FAAAteblXi0AcJe0VkA1AHTOcNO2y31prfWvvp965qbth/vSWuvf7lcD0AbAdW0FAEDt+ZmrBwBmCXMGuLaqFQBH5defH3eLxo4/H48qU9Yjbu+dXxlfox3tVWn3vxYJhBUAkgOe70sBALCveaq7AQBqyfblYAfg6+9l4bYvfZbl1+dzk/rjWny0lvyDn9sBCC4Y6XwVAAC+epaLBgDKjexywdqnawC0Z542o3a/dz3tuRxdjzW/tl5h/xoAwQGP96UAANjXPNXdAAC1ZPty8Aeg9xmHdwJXAv0BcC0PwXorAAB6K5w8PgBIPqBry7t1nwyA95l7a6Vbft71te8w7fVWHaf71nq0+U55b/wuA3BjYLjVUAAA1JhTtyoBQDdpawTuD0Dwmab++/vec7K+E3Surz8AnRtAeJsCAMCmX3lvAFB8hNby9QAkP9NWgnjXG/1O0zmfHoCVwrhRWQEAUHl6DrUDAAcRK4eIB6DzmSYOY/Q7gXd+seHLG+IBuFwPngYrAACCBc+WDgBkm8iV9XhtswNgPdPwTmD7v4dGEuwAGAuA+1gFAMBY/YdnBwDDRzC2AH8A8E5wPtHR7zjn1ayu/AFYpcCNzAoAgMzTCagNAASI7JnCO1Z/APBOoJuZVi/jO0Z/AHTtY3ewAgAgWPBs6QBAtokE1xMPgPaMawUxnnltOPV1dP3WfEKD8QAIBeFxrAIAIFbvdNkAQLqRfFxQr7vjAbCecdXfCZrJHr69Hrg1j8//7QBp125Q6jEegLYBXIcqAABC5c6XDADkm0loRfkAoHONm1YO5RmoDS/u57XTWnIYXG8+ACTB8NxVAQDgKme9YAAg+cx6l5cfADpHufVWxDs+r53WQvz29wIK2+XPBYQA+QEQGsBjmwIAwKZfeW8AUH6EtgZWAPDPoa9ZP3x/WzR2TcyLew7Kr+az9YuxI/Y25T/c3y9nJugp1t/El/BYASA54Pm+FAAA+5qnuhsAoJYsxiEqCwCIUjppHgCQdDBRZQGAKKWT5gEASQcTVZYagPu7uyM3baHcl9Za/+r7qWdu2n64L621/u1+NQBtAFzXVgAA1J6fuXoAYJbQN0B0NDUAf9/eDp4W3fDofJ7aUSxrP2oArAnhn0sBAJBrHuHVAIBwyXMlBAC55hFeDQAIlzxXQgCQax7h1QCAcMk/TjjqLgAYpXySvAAgySBGlQEARimfJC8ASDKIUWUAgFHKJ8kLAJIMYlQZAGCU8knyAoDBgxid/h8AAAD//0TAi70AAAAGSURBVAMAIWGJPVXQbTEAAAAASUVORK5CYIIA",
+  rua: "data:image/png;base64,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"
+};
+
+document.getElementById("imgUp").src = ASSET.cima;
+document.getElementById("imgDown").src = ASSET.baixo;
+document.getElementById("imgLeft").src = ASSET.esquerda;
+document.getElementById("imgRight").src = ASSET.direita;
+
+const PHASES = [
+  {
+    name: "FASE 1 — Ruas de São Luís",
+    cols: 8, rows: 8, cell: 44, maxCards: 4,
+    // Obstáculos NÃO isolam elementos — sempre há desvio
+    path: [
+      // rota principal
+      [0,0],[0,1],[0,2],[1,2],[2,2],[2,1],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[5,3],[6,3],[6,4],[6,5],[6,6],[7,6],[7,7],
+      // desvio para azulejo em 0,4 (obra em 0,3 bloqueia direto)
+      [0,3],[0,4],[1,4],[1,3],[1,1],[1,0],
+      // desvio obra em 2,1 e 4,1
+      [3,1],[3,2],[3,3],[2,3],[5,2],[5,1],[5,4],[5,5],[5,6],[4,4],[4,5]
+    ],
+    elements: {
+      "0,4":{id:"azulejo",name:"Azulejos portugueses",icon:"azulejo"},
+      "4,2":{id:"janela",name:"Janelas coloniais",icon:"janela"},
+      "6,6":{id:"porta",name:"Portas coloniais",icon:"porta"}
+    },
+    obstacles: {
+      "0,3":{type:"rua",icon:"rua"},
+      "2,1":{type:"obra",icon:"obra1"},
+      "4,1":{type:"obra",icon:"obra2"},
+      "6,4":{type:"rua",icon:"rua"}
+    },
+    need:["azulejo","janela","porta"],
+    dialogs:{"0,0":"Use os desvios amarelos!","0,4":"Azulejo coletado!","7,7":"Fase 1 concluída!"}
+  },
+  {
+    name: "FASE 2 — O Beco Sinuoso",
+    cols: 8, rows: 9, cell: 42, maxCards: 4,
+    path: [
+      [0,0],[1,0],[2,0],[2,1],[2,2],[2,3],[3,3],[4,3],[4,2],[4,1],[5,1],[6,1],[6,2],[6,3],[6,4],[7,4],[8,4],[8,5],[8,6],[8,7],
+      // desvios
+      [1,1],[1,2],[1,3],[3,0],[3,1],[3,2],[3,4],[4,4],[5,2],[5,3],[5,4],[7,3],[7,5],[7,6],[7,7],[6,5]
+    ],
+    elements: {
+      "2,3":{id:"porta",name:"Portas coloniais",icon:"porta"},
+      "4,1":{id:"azulejo",name:"Azulejos portugueses",icon:"azulejo"},
+      "6,4":{id:"janela",name:"Janelas coloniais",icon:"janela"},
+      "8,6":{id:"sacada",name:"Sacadas",icon:"sacada"}
+    },
+    obstacles: {
+      "2,1":{type:"obra",icon:"obra1"},
+      "4,2":{type:"rua",icon:"rua"},
+      "6,2":{type:"obra",icon:"obra2"},
+      "7,4":{type:"rua",icon:"rua"}
+    },
+    need:["porta","azulejo","janela","sacada"],
+    dialogs:{"0,0":"Fase 2: desvie!","8,7":"Fase 2 ok!"}
+  },
+  {
+    name: "FASE 3 — Largo Colonial",
+    cols: 8, rows: 9, cell: 42, maxCards: 4,
+    path: [
+      [0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[2,2],[2,1],[3,1],[4,1],[4,2],[4,3],[4,4],[5,4],[6,4],[6,5],[6,6],[7,6],[8,6],[8,7],
+      // desvios
+      [1,2],[1,1],[1,4],[2,4],[3,2],[3,3],[3,4],[5,3],[5,5],[5,6],[7,5],[7,7],[6,3]
+    ],
+    elements: {
+      "0,3":{id:"azulejo",name:"Azulejos portugueses",icon:"azulejo"},
+      "2,1":{id:"janela",name:"Janelas coloniais",icon:"janela"},
+      "4,4":{id:"porta",name:"Portas coloniais",icon:"porta"},
+      "6,6":{id:"sacada",name:"Sacadas",icon:"sacada"}
+    },
+    obstacles: {
+      "1,3":{type:"obra",icon:"obra1"},
+      "2,2":{type:"rua",icon:"rua"},
+      "4,2":{type:"obra",icon:"obra2"},
+      "6,5":{type:"rua",icon:"rua"}
+    },
+    need:["azulejo","janela","porta","sacada"],
+    dialogs:{"0,0":"Fase 3!","8,7":"Fase 3 completa!"}
+  },
+  {
+    name: "FASE 4 — Labirinto de Azulejos",
+    cols: 9, rows: 9, cell: 40, maxCards: 4,
+    path: [
+      [0,0],[1,0],[2,0],[2,1],[2,2],[2,3],[3,3],[4,3],[4,2],[4,1],[5,1],[6,1],[6,2],[6,3],[6,4],[6,5],[7,5],[8,5],[8,6],[8,7],[8,8],
+      // desvios
+      [1,1],[1,2],[1,3],[3,1],[3,2],[3,4],[4,4],[5,2],[5,3],[5,4],[5,5],[7,4],[7,6],[7,7],[7,8],[6,6]
+    ],
+    elements: {
+      "2,3":{id:"azulejo",name:"Azulejos portugueses",icon:"azulejo"},
+      "4,1":{id:"janela",name:"Janelas coloniais",icon:"janela"},
+      "6,4":{id:"porta",name:"Portas coloniais",icon:"porta"},
+      "6,5":{id:"sacada",name:"Sacadas",icon:"sacada"},
+      "8,7":{id:"azulejo2",name:"Azulejos portugueses",icon:"azulejo"}
+    },
+    obstacles: {
+      "2,1":{type:"obra",icon:"obra1"},
+      "2,2":{type:"rua",icon:"rua"},
+      "4,2":{type:"obra",icon:"obra2"},
+      "6,2":{type:"rua",icon:"rua"},
+      "6,3":{type:"obra",icon:"obra1"},
+      "8,5":{type:"rua",icon:"rua"}
+    },
+    need:["azulejo","janela","porta","sacada","azulejo2"],
+    dialogs:{"0,0":"Fase 4!","8,8":"Quase no Casarão!"}
+  },
+  {
+    name: "FASE 5 — O Casarão Final",
+    cols: 9, rows: 9, cell: 40, maxCards: 4,
+    path: [
+      [0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[2,2],[2,1],[3,1],[4,1],[4,2],[4,3],[4,4],[5,4],[6,4],[6,5],[6,6],[7,6],[8,6],[8,7],[8,8],
+      // desvios
+      [1,1],[1,2],[1,4],[2,4],[3,2],[3,3],[3,4],[5,3],[5,5],[5,6],[7,5],[7,7],[7,8],[6,3]
+    ],
+    elements: {
+      "0,3":{id:"azulejo",name:"Azulejos portugueses",icon:"azulejo"},
+      "2,1":{id:"janela",name:"Janelas coloniais",icon:"janela"},
+      "4,4":{id:"porta",name:"Portas coloniais",icon:"porta"},
+      "6,6":{id:"sacada",name:"Sacadas",icon:"sacada"},
+      "8,7":{id:"janela2",name:"Janelas coloniais",icon:"janela"}
+    },
+    obstacles: {
+      "0,2":{type:"rua",icon:"rua"},
+      "2,2":{type:"obra",icon:"obra1"},
+      "4,2":{type:"rua",icon:"rua"},
+      "4,3":{type:"obra",icon:"obra2"},
+      "6,5":{type:"rua",icon:"rua"},
+      "6,4":{type:"obra",icon:"obra1"}
+    },
+    need:["azulejo","janela","porta","sacada","janela2"],
+    dialogs:{"0,0":"Última fase!","8,8":"Chegamos ao Casarão!"}
+  }
+];
+
+let phasease=0,pos={r:0,c:0},queue=[],collected=new Set(),moving=false,steps=0,totalSteps=0;
+const dirMap={up:{dr:-1,dc:0},down:{dr:1,dc:0},left:{dr:0,dc:-1},right:{dr:0,dc:1}};
+let pathSet=new Set(),current=PHASES[0];
+
+function loadPhase(i){
+  phase=i;current=PHASES[i];
+  pos={r:current.path[0][0],c:current.path[0][1]};
+  queue=[];collected=new Set();moving=false;steps=0;
+  pathSet=new Set(current.path.map(([r,c])=>r+","+c));
+  document.getElementById("phaseTitle").textContent=current.name;
+  document.getElementById("hudPhase").textContent=(i+1);
+  document.getElementById("hudElMax").textContent=current.need.length;
+  // show only maxCards slots
+  document.querySelectorAll(".slot").forEach((s,idx)=>{
+    s.style.display = idx < current.maxCards ? "" : "none";
+  });
+  const panel=document.getElementById("elsPanel");panel.innerHTML="";
+  const seen=new Set();
+  current.need.forEach(id=>{
+    const el=Object.values(current.elements).find(e=>e.id===id);
+    if(!el||seen.has(el.name))return;seen.add(el.name);
+    const div=document.createElement("div");div.className="ec";div.id="ec-"+id;
+    div.innerHTML=`<img src="${ASSET[el.icon]}"><br>${el.name}`;panel.appendChild(div);
+  });
+  buildBoard();updateSlots();updateHUD();
+  setStatus(current.name+" — só "+current.maxCards+" cartas! Desvie bem.");
+  showSpeech(current.dialogs[pos.r+","+pos.c]||"Vamos lá!");
+}
+
+function buildBoard(){
+  const board=document.getElementById("board");board.innerHTML="";
+  const cs=current.cell;
+  board.style.gridTemplateColumns=`repeat(${current.cols},${cs}px)`;
+  board.style.gridTemplateRows=`repeat(${current.rows},${cs}px)`;
+  for(let r=0;r<current.rows;r++)for(let c=0;c<current.cols;c++){
+    const cell=document.createElement("div");cell.className="cell";
+    cell.style.width=cs+"px";cell.style.height=cs+"px";
+    const key=r+","+c;
+    if(pathSet.has(key))cell.classList.add("path");
+    if(r===current.path[0][0]&&c===current.path[0][1]){
+      cell.classList.add("start");
+      const lab=document.createElement("div");lab.className="cell-label";lab.textContent="INÍCIO";cell.appendChild(lab);
+    }
+    const end=current.path[current.path.length-1];
+    if(r===end[0]&&c===end[1]){
+      cell.classList.add("end");
+      const lab=document.createElement("div");lab.className="cell-label";lab.textContent=phase===4?"CASARÃO":"FIM";cell.appendChild(lab);
+    }
+    if(current.obstacles[key]){
+      cell.classList.add("obstacle");
+      const obs=document.createElement("img");obs.src=ASSET[current.obstacles[key].icon];obs.className="obs-icon";cell.appendChild(obs);
+    }
+    if(current.elements[key]){
+      const el=document.createElement("img");el.src=ASSET[current.elements[key].icon];el.className="el-icon";el.id="el-"+current.elements[key].id;cell.appendChild(el);
+    }
+    board.appendChild(cell);
+  }
+  const pl=document.createElement("img");pl.src=ASSET.player;pl.className="player";pl.id="player";board.appendChild(pl);
+  updatePlayer();
+}
+
+function updatePlayer(){
+  const pl=document.getElementById("player");if(!pl)return;
+  const cs=current.cell;
+  pl.style.left=(pos.c*cs+(cs-36)/2)+"px";pl.style.top=(pos.r*cs+(cs-42)/2)+"px";
+}
+
+function updateSlots(){
+  document.querySelectorAll(".slot").forEach((s,i)=>{
+    s.innerHTML=(i+1)+"";s.classList.remove("filled");
+    if(queue[i]){
+      s.innerHTML="";
+      const n={up:"cima",down:"baixo",left:"esquerda",right:"direita"}[queue[i]];
+      const img=document.createElement("img");
+      img.src=ASSET[n];
+      s.appendChild(img);
+      s.classList.add("filled");
+    }
+  });
+}
+
+function updateHUD(){
+  document.getElementById("hudEl").textContent=collected.size;
+  document.getElementById("hudSteps").textContent=totalSteps+steps;
+  current.need.forEach(id=>{const el=document.getElementById("ec-"+id);if(el)el.classList.toggle("got",collected.has(id));});
+}
+function setStatus(m,win){const s=document.getElementById("status");s.textContent=m;s.className="status"+(win?" win":"");}
+function showSpeech(text){
+  if(!text)return;const old=document.querySelector(".speech");if(old)old.remove();
+  const b=document.createElement("div");b.className="speech";b.textContent=text;
+  const cs=current.cell;b.style.left=(pos.c*cs)+"px";b.style.top=Math.max(0,pos.r*cs-45)+"px";
+  document.getElementById("board").appendChild(b);setTimeout(()=>{if(b.parentNode)b.remove();},3000);
+}
+function addCmd(d){
+  if(moving)return;
+  if(queue.length>=current.maxCards){setStatus("Só "+current.maxCards+" cartas nesta fase!");return;}
+  queue.push(d);updateSlots();setStatus("Carta "+queue.length+"/"+current.maxCards);
+}
+function clrCmd(){if(moving)return;queue=[];updateSlots();setStatus("Sequência limpa.");}
+
+async function execute(){
+  if(moving||!queue.length)return;moving=true;document.getElementById("btnGo").disabled=true;
+  for(const d of[...queue]){
+    const{dr,dc}=dirMap[d];const nr=pos.r+dr,nc=pos.c+dc;const key=nr+","+nc;
+    if(nr<0||nr>=current.rows||nc<0||nc>=current.cols||!pathSet.has(key)){
+      setStatus("⛔ Fora do caminho! Só casas amarelas.");await sleep(500);continue;
+    }
+    if(current.obstacles[key]){
+      const tipo=current.obstacles[key].type==="rua"?"Rua interditada":"Obra de restauração";
+      setStatus("🚧 "+tipo+"! Use o DESVIO.");showSpeech("Bloqueado! Desviar!");await sleep(700);continue;
+    }
+    pos={r:nr,c:nc};steps++;updatePlayer();await sleep(300);
+    if(current.elements[key]&&!collected.has(current.elements[key].id)){
+      collected.add(current.elements[key].id);
+      const ic=document.getElementById("el-"+current.elements[key].id);if(ic)ic.style.display="none";
+      updateHUD();showSpeech("Coletei: "+current.elements[key].name+"!");setStatus("✨ "+current.elements[key].name);await sleep(600);
+    }
+    if(current.dialogs[key])showSpeech(current.dialogs[key]);
+    const end=current.path[current.path.length-1];
+    if(nr===end[0]&&nc===end[1]){
+      totalSteps+=steps;
+      if(collected.size>=current.need.length){
+        if(phase>=4){setStatus("🎉 Casarão!","win");setTimeout(playEnding,800);}
+        else{document.getElementById("phaseModalTitle").textContent="Fase "+(phase+1)+" Completa!";
+          document.getElementById("phaseModalText").textContent="Desviou dos obstáculos! Fase "+(phase+2)+" vem aí.";
+          document.getElementById("modalPhase").classList.add("show");}
+      }else setStatus("Faltam elementos ("+collected.size+"/"+current.need.length+")!");
+      queue=[];updateSlots();moving=false;document.getElementById("btnGo").disabled=false;return;
+    }
+  }
+  queue=[];updateSlots();moving=false;document.getElementById("btnGo").disabled=false;
+  setStatus("Elementos: "+collected.size+"/"+current.need.length);
+}
+
+function playEnding(){
+  const end=document.getElementById("ending");
+  const player=document.getElementById("ending-player");
+  const hole=document.getElementById("ending-hole");
+  const text=document.getElementById("ending-text");
+  const btn=document.getElementById("ending-btn");
+  player.src=ASSET.player;end.classList.add("show");
+  setTimeout(()=>player.classList.add("spinning"),300);
+  setTimeout(()=>{
+    text.innerHTML="Na real, São Luís tem vários obstáculos,<br>várias coisas maravilhosas…<br><br>mas o que mais importa<br>é a <span style='color:#fff;font-size:1.15rem'>nossa história</span>.";
+    text.classList.add("show");
+  },2800);
+  setTimeout(()=>{hole.style.width="180px";hole.style.height="180px";},5500);
+  setTimeout(()=>{player.classList.remove("spinning");player.classList.add("falling");},6800);
+  setTimeout(()=>{
+    text.innerHTML="Fim da Rota da Arquitetura Colonial.<br><small style='opacity:.7'>Centro Histórico de São Luís</small>";
+    btn.classList.add("show");
+  },9000);
+}
+
+function nextPhase(){document.getElementById("modalPhase").classList.remove("show");loadPhase(phase+1);}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+document.querySelectorAll(".abtn").forEach(b=>b.addEventListener("click",()=>addCmd(b.dataset.d)));
+document.getElementById("btnGo").addEventListener("click",execute);
+document.getElementById("btnClr").addEventListener("click",clrCmd);
+document.querySelectorAll(".slot").forEach(s=>s.addEventListener("click",()=>{if(moving)return;const i=+s.dataset.i;if(queue[i]){queue.splice(i,1);updateSlots();}}));
+window.addEventListener("keydown",e=>{
+  if(moving)return;
+  const m={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right",w:"up",s:"down",a:"left",d:"right",W:"up",S:"down",A:"left",D:"right"};
+  if(m[e.key]){e.preventDefault();addCmd(m[e.key]);}
+  if(e.key==="Enter")execute();if(e.key==="Backspace"||e.key==="Delete")clrCmd();
+});
+loadPhase(0);
+</script>
+</body>
+</html>
